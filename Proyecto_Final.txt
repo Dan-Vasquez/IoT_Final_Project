@@ -1,0 +1,94 @@
+Proyecto Final: **Aplicación IoT con AWS – Sensores, Actuadores y Notificaciones**&#x20;
+
+---
+
+### Objetivo general
+
+Diseñar e implementar una solución básica de IoT con **AWS IoT Core**, en la que el estudiante:
+
+* Explore un sector de aplicación IoT.
+* Simule sensores mediante **MQTT**.
+* Utilice **AWS EC2** para ejecutar un suscriptor que almacene datos en una base de datos.
+* Configure reglas para enviar alertas por correo electrónico.
+* Desarrolle una **API REST** con **AWS Chalice** para gestionar sensores, actuadores y eventos.
+* Diseñe un **esquema estrella** para un proceso IoT del sector elegido.
+
+---
+
+## Fase 1 – Investigación y diseño
+
+1. Elegir un sector IoT (p. ej., Agricultura, Salud, Logística, Energía, Smart Cities, Industria 4.0, etc.).
+2. Investigar sensores y actuadores habituales en ese sector.
+3. Diseñar los *topics* MQTT siguiendo buenas prácticas.
+
+## Fase 2 – Simulación de sensores y actuadores
+
+1. Simular **al menos tres** sensores que publiquen datos MQTT (temperatura, humedad, movimiento, etc.).
+2. Publicar en AWS IoT Core con `mqtt.QoS.AT_LEAST_ONCE`.
+3. Usar mensajes JSON, por ejemplo:
+
+```json
+{
+  "sensor": "tempSensor01",
+  "value": 32.7,
+  "unit": "Celsius",
+  "timestamp": "2025-05-12T10:15:00Z"
+}
+```
+
+## Fase 3 – Subscripción y almacenamiento (AWS EC2)
+
+1. Crear un suscriptor MQTT en una instancia **EC2**.
+2. El suscriptor debe:
+
+   * Escuchar los *topics* de los sensores.
+   * Guardar los eventos en **PostgreSQL** (sensor ID, valor, unidad, *timestamp*).
+
+## Fase 4 – Notificaciones con AWS IoT Rules + SNS
+
+1. Configurar una regla en AWS IoT Core que:
+
+   * Escuche un *topic* (p. ej., temperatura).
+   * Envíe un correo mediante **Amazon SNS** si se cumple una condición (p. ej., `value > 40`).
+
+## Fase 5 – API REST con AWS Chalice
+
+| Método | Ruta                         | Funcionalidad                 |
+| ------ | ---------------------------- | ----------------------------- |
+| GET    | /sensors                     | Listar sensores registrados   |
+| POST   | /sensors                     | Registrar un nuevo sensor     |
+| GET    | /sensors/{sensor\_id}/events | Ver eventos de un sensor      |
+| GET    | /actuators                   | Listar actuadores registrados |
+| POST   | /actuators                   | Registrar un nuevo actuador   |
+
+La API utiliza la misma base de datos que el suscriptor en EC2.
+
+## Fase 6 – Esquema estrella
+
+Diseñar un **star schema** basado en algún evento IoT relevante del sector elegido.
+
+---
+
+## Entregables
+
+* Documento de diseño (sector, sensores, actuadores, *topics*).
+* Código fuente de:
+
+  * Simulador de sensores/actuadores.
+  * Suscriptor en EC2.
+  * API Chalice.
+* Capturas de AWS IoT Core (topics, rules, conexiones).
+* Diseño del esquema estrella.
+* Video corto (opcional) demostrando el flujo completo.
+
+## Evaluación
+
+| Criterio                           | Peso |
+| ---------------------------------- | ---- |
+| Investigación y diseño MQTT        | 20 % |
+| Simulación funcional de sensores   | 20 % |
+| Suscriptor en EC2 y almacenamiento | 20 % |
+| Regla SNS y notificación           | 10 % |
+| API REST funcional en Chalice      | 15 % |
+| Star Schema                        | 10 % |
+| Presentación y entrega completa    | 5 %  |

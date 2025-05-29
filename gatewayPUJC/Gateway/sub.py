@@ -1,6 +1,13 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0.
 
+#######################################################
+# Script de suscripción MQTT para IoT Retail Project  #
+# Recibe mensajes de sensores y actuadores y los     #
+# almacena en la base de datos PostgreSQL            #
+#######################################################
+
+# Imports para funcionalidad MQTT y AWS IoT
 from awscrt import mqtt, http
 from awsiot import mqtt_connection_builder
 import sys
@@ -9,7 +16,7 @@ import time
 import json
 from utils.command_line_utils import CommandLineUtils
 
-# Agregar estos imports al inicio del archivo
+# Imports para manejo de base de datos PostgreSQL
 import os
 import json
 import psycopg2
@@ -21,35 +28,43 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Configuración de la conexión a PostgreSQL
+# Se obtienen los valores de variables de entorno, con valores por defecto en caso de no encontrarlos
 DB_CONFIG = {
-    'host': os.environ.get('DB_HOST', '34.227.160.239'),
-    'dbname': os.environ.get('DB_NAME', 'iot_final_project'),
-    'user': os.environ.get('DB_USER', 'dok'),
-    'password': os.environ.get('DB_PASSWORD', 'dok'),
-    'port': os.environ.get('DB_PORT', '5432')
+    'host': os.environ.get('DB_HOST', '34.227.160.239'),      # Dirección IP o hostname del servidor PostgreSQL
+    'dbname': os.environ.get('DB_NAME', 'iot_final_project'),  # Nombre de la base de datos
+    'user': os.environ.get('DB_USER', 'dok'),                  # Usuario de la base de datos
+    'password': os.environ.get('DB_PASSWORD', 'dok'),          # Contraseña del usuario
+    'port': os.environ.get('DB_PORT', '5432')                  # Puerto de PostgreSQL (estándar: 5432)
 }
 
-# Mapeo de sensores por tipo (puedes ampliarlo según tus sensores)
+# Mapeo de prefijos de IDs de sensores a tipos de sensores
+# Permite identificar el tipo de sensor basado en el prefijo de su ID
 SENSOR_TYPE_MAP = {
-    # Sensores de movimiento
-    'MOV': 'movimiento',
-    # Sensores de apertura
-    'APR': 'apertura',
-    # Etiquetas RFID
-    'RFID': 'rfid',
+    'MOV': 'movimiento',  # Prefijo MOV corresponde a sensores de movimiento
+    'APR': 'apertura',    # Prefijo APR corresponde a sensores de apertura
+    'RFID': 'rfid',       # Prefijo RFID corresponde a etiquetas RFID
 }
 
-# Mapeo de actuadores por tipo
+# Mapeo de prefijos de IDs de actuadores a tipos de actuadores
+# Permite identificar el tipo de actuador basado en el prefijo de su ID
 ACTUATOR_TYPE_MAP = {
-    # Actuadores de alarma
-    'ALM': 'alarma',
-    # Actuadores de puerta
-    'PTA': 'puerta',
+    'ALM': 'alarma',      # Prefijo ALM corresponde a actuadores de alarma
+    'PTA': 'puerta',      # Prefijo PTA corresponde a actuadores de puerta
 }
 
 def get_db_connection():
-    """Establece y retorna una conexión a la base de datos PostgreSQL"""
+    """Establece y retorna una conexión a la base de datos PostgreSQL.
+    
+    Utiliza la configuración en DB_CONFIG para establecer la conexión.
+    
+    Returns:
+        connection: Objeto de conexión a PostgreSQL
+        
+    Raises:
+        Exception: Si no se puede establecer la conexión a la base de datos
+    """
     try:
+        # Crear conexión usando los parámetros de configuración
         conn = psycopg2.connect(**DB_CONFIG)
         return conn
     except Exception as e:
@@ -57,16 +72,33 @@ def get_db_connection():
         raise
 
 def save_event(device_id, device_type, value, unit, timestamp=None, metadata=None):
-    """Guarda un nuevo evento en la base de datos"""
+    """Guarda un nuevo evento en la base de datos PostgreSQL.
+    
+    Almacena los datos de un evento generado por un sensor o actuador en la tabla 'events'.
+    
+    Args:
+        device_id (str): Identificador único del dispositivo (sensor o actuador)
+        device_type (str): Tipo de dispositivo ('sensor' o 'actuator')
+        value (float): Valor registrado por el dispositivo
+        unit (str): Unidad de medida del valor
+        timestamp (datetime, optional): Marca de tiempo del evento. Si es None, se usa la hora actual.
+        metadata (dict, optional): Datos adicionales del evento en formato diccionario. Si es None, se usa un diccionario vacío.
+    
+    Returns:
+        dict: Datos del evento guardado, con timestamps convertidos a formato ISO 8601, o None si ocurre un error
+    """
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            # Usar la hora actual si no se proporciona timestamp
             if timestamp is None:
                 timestamp = datetime.now()
                 
+            # Usar diccionario vacío si no se proporcionan metadatos
             if metadata is None:
                 metadata = {}
                 
+            # Insertar el evento en la tabla events
             cur.execute(
                 """
                 INSERT INTO events (device_id, device_type, value, unit, timestamp, metadata)
@@ -76,7 +108,10 @@ def save_event(device_id, device_type, value, unit, timestamp=None, metadata=Non
                 (device_id, device_type, value, unit, timestamp, json.dumps(metadata))
             )
             conn.commit()
+            
+            # Obtener el evento insertado
             event = cur.fetchone()
+            
             # Convertir objeto datetime a string para mostrar en consola
             if event and event.get('timestamp'):
                 event['timestamp'] = event['timestamp'].isoformat()
@@ -85,23 +120,44 @@ def save_event(device_id, device_type, value, unit, timestamp=None, metadata=Non
         print(f"Error al guardar evento: {e}")
         return None
     finally:
+        # Asegurar que la conexión se cierre incluso si ocurre una excepción
         conn.close()
 
 def determine_device_type_from_topic(topic):
-    """Determina el tipo de dispositivo y su ID basado en el tópico MQTT"""
-    # Formato esperado: data/retail/sensors/{tipo_sensor}/{id_sensor}
-    # o data/retail/actuadores/{tipo_actuador}/{id_actuador}
-    parts = topic.split('/')
-    if len(parts) >= 5:
-        category = parts[2]  # 'sensors' o 'actuadores'
-        device_type = parts[3]  # 'movimiento', 'apertura', 'rfid', 'alarma', 'puerta'
-        device_id = parts[4]  # ID del dispositivo
+    """Determina el tipo de dispositivo y su ID basado en el tópico MQTT.
+    
+    Analiza la estructura del tópico MQTT para extraer información sobre el tipo de dispositivo
+    y su identificador. La estructura esperada del tópico es:
+    data/retail/sensors/{tipo_sensor}/{id_sensor} para sensores
+    data/retail/actuadores/{tipo_actuador}/{id_actuador} para actuadores
+    
+    Args:
+        topic (str): Tópico MQTT completo del mensaje recibido
         
+    Returns:
+        dict: Diccionario con las claves 'category', 'device_type', y 'device_id' si el tópico tiene
+              un formato válido, o None si el formato es inválido
+              - category: 'sensors' o 'actuadores'
+              - device_type: tipo específico ('movimiento', 'apertura', 'rfid', 'alarma', 'puerta')
+              - device_id: identificador único del dispositivo
+    """
+    # Dividir el tópico por '/' para analizar sus componentes
+    parts = topic.split('/')
+    
+    # Verificar que el tópico tiene suficientes partes
+    if len(parts) >= 5:
+        # Extraer información relevante
+        category = parts[2]    # 'sensors' o 'actuadores'
+        device_type = parts[3] # tipo de sensor/actuador
+        device_id = parts[4]   # ID del dispositivo
+        
+        # Devolver la información en un diccionario
         return {
             'category': category,
             'device_type': device_type,
             'device_id': device_id
         }
+    # Si el tópico no tiene el formato esperado, devolver None
     return None
 
 
@@ -148,12 +204,31 @@ def on_resubscribe_complete(resubscribe_future):
 
 # Callback when the subscribed topic receives a message - Modificado
 def on_message_received(topic, payload, dup, qos, retain, **kwargs):
+    """Manejador de mensajes MQTT recibidos con almacenamiento en base de datos.
+    
+    Esta función es llamada automáticamente cuando se recibe un mensaje en un tópico al que
+    el cliente está suscrito. Procesa el mensaje JSON, extrae la información relevante y
+    guarda los datos del evento en la base de datos PostgreSQL.
+    
+    Args:
+        topic (str): Tópico MQTT del mensaje recibido
+        payload (bytes): Contenido del mensaje en formato bytes
+        dup (bool): Indicador de mensaje duplicado
+        qos (int): Nivel de calidad de servicio (0, 1 o 2)
+        retain (bool): Indicador de mensaje retenido
+        **kwargs: Argumentos adicionales proporcionados por el cliente MQTT
+        
+    No devuelve ningún valor, pero incrementa el contador global de mensajes recibidos
+    y muestra información en la consola sobre el procesamiento del mensaje.
+    """
     try:
         print(f"\nRecibido mensaje del tópico '{topic}'")
         
-        # Parsear el payload como JSON
+        # Paso 1: Decodificar y parsear el payload JSON
         try:
+            # Convertir bytes a texto UTF-8
             payload_text = payload.decode('utf-8')
+            # Parsear el texto como JSON
             message = json.loads(payload_text)
             print(f"Contenido del mensaje: {json.dumps(message, indent=2)}")
         except json.JSONDecodeError:
@@ -163,43 +238,46 @@ def on_message_received(topic, payload, dup, qos, retain, **kwargs):
             print(f"Error al procesar el mensaje: {e}")
             return
         
-        # Extraer información del tópico
+        # Paso 2: Extraer información del tópico MQTT
         topic_info = determine_device_type_from_topic(topic)
         if not topic_info:
             print("Error: No se pudo determinar el tipo de dispositivo del tópico")
             return
         
-        # Extraer información relevante del mensaje
+        # Paso 3: Extraer y procesar la información del dispositivo
         device_id = topic_info['device_id']
         
-        # Determinar si es un sensor o actuador
+        # Determinar si es un sensor o actuador basándose en la categoría del tópico
         is_actuator = topic_info['category'] == 'actuadores'
         device_type = 'actuator' if is_actuator else 'sensor'
         
-        # Extraer otros campos del mensaje
-        # Asegúrate de que value sea un número
+        # Paso 4: Extraer y validar los campos del mensaje
+        # Convertir el valor a número flotante (importante para la base de datos)
         value = float(message.get('value', 0))
         unit = message.get('unit', '')
         timestamp_str = message.get('timestamp')
         
-        # Convertir timestamp si existe
+        # Paso 5: Procesar el timestamp
         timestamp = None
         if timestamp_str:
             try:
+                # Intentar parsear el timestamp en formato ISO 8601
                 timestamp = datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M:%SZ")
             except ValueError:
                 print(f"Error: Formato de timestamp inválido: {timestamp_str}")
                 timestamp = datetime.now()
         else:
+            # Si no hay timestamp, usar la hora actual
             timestamp = datetime.now()
         
-        # Construir metadata con campos adicionales
+        # Paso 6: Construir metadata con campos adicionales
+        # Cualquier campo que no sea estándar se guarda como metadata
         metadata = {}
         for key, val in message.items():
             if key not in ['sensor', 'value', 'unit', 'timestamp']:
                 metadata[key] = val
         
-        # Guardar el evento en la base de datos
+        # Paso 7: Guardar el evento en la base de datos
         print(f"Guardando evento para {device_type} {device_id}...")
         event = save_event(
             device_id=device_id,
@@ -210,18 +288,21 @@ def on_message_received(topic, payload, dup, qos, retain, **kwargs):
             metadata=metadata
         )
         
+        # Paso 8: Informar sobre el resultado de la operación
         if event:
             print(f"Evento guardado exitosamente: {json.dumps(event, indent=2)}")
         else:
             print("Error: No se pudo guardar el evento")
         
-        # Incrementar contador global de mensajes recibidos
+        # Paso 9: Actualizar contador de mensajes y señalizar eventos
         global received_count
         received_count += 1
+        # Si se ha alcanzado el número esperado de mensajes, señalizar el evento
         if received_count == cmdData.input_count:
             received_all_event.set()
     
     except Exception as e:
+        # Capturar cualquier excepción no manejada para evitar interrupciones
         print(f"Error general en on_message_received: {e}")
 
 # Callback when the connection successfully connects

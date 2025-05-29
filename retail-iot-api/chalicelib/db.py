@@ -10,10 +10,10 @@ load_dotenv()
 
 # Configuración de la conexión a PostgreSQL
 DB_CONFIG = {
-    'host': os.environ.get('DB_HOST', 'localhost'),
-    'dbname': os.environ.get('DB_NAME', 'retail_iot'),
-    'user': os.environ.get('DB_USER', 'postgres'),
-    'password': os.environ.get('DB_PASSWORD', ''),
+    'host': os.environ.get('DB_HOST', '34.227.160.239'),
+    'dbname': os.environ.get('DB_NAME', 'iot_final_project'),
+    'user': os.environ.get('DB_USER', 'dok'),
+    'password': os.environ.get('DB_PASSWORD', 'dok'),
     'port': os.environ.get('DB_PORT', '5432')
 }
 
@@ -31,8 +31,13 @@ def get_all_sensors():
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute("SELECT * FROM sensors ORDER BY created_at DESC")
-            return cur.fetchall()
+            cur.execute("SELECT * FROM sensors")
+            sensors = cur.fetchall()
+            # Convertir objetos datetime a strings
+            for sensor in sensors:
+                if sensor.get('created_at'):
+                    sensor['created_at'] = sensor['created_at'].isoformat()
+            return sensors
     finally:
         conn.close()
 
@@ -61,7 +66,13 @@ def create_sensor(sensor_id, name, type, location, status='active'):
                 (sensor_id, name, type, location, now, status)
             )
             conn.commit()
-            return cur.fetchone()
+            sensor = cur.fetchone()
+
+            #Convertir objeto datetime a string,
+            if sensor and sensor.get('created_at'):
+                sensor['created_at'] = sensor['created_at'].isoformat()
+
+            return sensor
     finally:
         conn.close()
 
@@ -75,20 +86,27 @@ def get_sensor_events(sensor_id, limit=100, start_date=None, end_date=None):
                 WHERE device_id = %s AND device_type = 'sensor'
             """
             params = [sensor_id]
-            
+
             if start_date:
                 query += " AND timestamp >= %s"
                 params.append(start_date)
-                
+
             if end_date:
                 query += " AND timestamp <= %s"
                 params.append(end_date)
-                
+
             query += " ORDER BY timestamp DESC LIMIT %s"
             params.append(limit)
-            
+
             cur.execute(query, params)
-            return cur.fetchall()
+            events = cur.fetchall()
+
+            #Convertir objetos datetime a strings,
+            for event in events:
+                if event.get('timestamp'):
+                    event['timestamp'] = event['timestamp'].isoformat()
+
+            return events
     finally:
         conn.close()
 
@@ -97,8 +115,13 @@ def get_all_actuators():
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute("SELECT * FROM actuators ORDER BY created_at DESC")
-            return cur.fetchall()
+            cur.execute("SELECT * FROM actuators")
+            actuators = cur.fetchall()
+
+            for actuator in actuators:
+                if actuator.get('created_at'):
+                    actuator['created_at'] = actuator['created_at'].isoformat()
+            return actuators
     finally:
         conn.close()
 
@@ -117,7 +140,13 @@ def create_actuator(actuator_id, name, type, location, status='active'):
                 (actuator_id, name, type, location, now, status)
             )
             conn.commit()
-            return cur.fetchone()
+            actuator = cur.fetchone()
+
+            #Convertir objeto datetime a string,
+            if actuator and actuator.get('created_at'):
+                actuator['created_at'] = actuator['created_at'].isoformat()
+
+            return actuator
     finally:
         conn.close()
 
@@ -128,10 +157,10 @@ def save_event(device_id, device_type, value, unit, timestamp=None, metadata=Non
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             if timestamp is None:
                 timestamp = datetime.now()
-                
+
             if metadata is None:
                 metadata = {}
-                
+
             cur.execute(
                 """
                 INSERT INTO events (device_id, device_type, value, unit, timestamp, metadata)
@@ -141,6 +170,12 @@ def save_event(device_id, device_type, value, unit, timestamp=None, metadata=Non
                 (device_id, device_type, value, unit, timestamp, json.dumps(metadata))
             )
             conn.commit()
-            return cur.fetchone()
+            event = cur.fetchone()
+
+            #Convertir objeto datetime a string,
+            if event and event.get('timestamp'):
+                event['timestamp'] = event['timestamp'].isoformat()
+
+            return event
     finally:
         conn.close()

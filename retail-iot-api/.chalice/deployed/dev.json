@@ -1,0 +1,17 @@
+{
+  "resources": [
+    {
+      "name": "api_handler",
+      "resource_type": "lambda_function",
+      "lambda_arn": "arn:aws:lambda:us-east-1:135474195498:function:retail-iot-api-dev"
+    },
+    {
+      "name": "rest_api",
+      "resource_type": "rest_api",
+      "rest_api_id": "f0a2m1sl1l",
+      "rest_api_url": "https://f0a2m1sl1l.execute-api.us-east-1.amazonaws.com/dev/"
+    }
+  ],
+  "schema_version": "2.0",
+  "backend": "api"
+}

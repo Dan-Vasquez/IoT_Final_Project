@@ -53,4 +53,4 @@ if (!$?) {
 $topic = "data/retail/#"
 
 Write-Host "Suscribiendo al topic: $topic (captura todos los sensores)"
-& $python3 Gateway\sub.py --endpoint a1tq9r6f8r1tbb-ats.iot.us-east-1.amazonaws.com --ca_file root-CA.crt --cert GatewayLab_PUJC_Palmas_33_GW001.cert.pem --key GatewayLab_PUJC_Palmas_33_GW001.private.key --client_id basicSub --topic $topic --count 10
+& $python3 Gateway\sub.py --endpoint a18v3fuy20t61j-ats.iot.us-east-1.amazonaws.com --ca_file root-CA.crt --cert GatewayLab_PUJC_Palmas_33_GW001.cert.pem --key GatewayLab_PUJC_Palmas_33_GW001.private.key --client_id basicSub --topic $topic --count 10

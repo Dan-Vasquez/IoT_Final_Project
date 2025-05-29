@@ -53,7 +53,7 @@ class SensorApertura:
         comando = [
             "python", 
             pub_script,
-            "--endpoint", "a1tq9r6f8r1tbb-ats.iot.us-east-1.amazonaws.com",
+            "--endpoint", "a18v3fuy20t61j-ats.iot.us-east-1.amazonaws.com",
             "--ca_file", os.path.join(base_path, "root-CA.crt"),
             "--cert", os.path.join(base_path, "GatewayLab_PUJC_Palmas_33_GW001.cert.pem"),
             "--key", os.path.join(base_path, "GatewayLab_PUJC_Palmas_33_GW001.private.key"),
@@ -72,7 +72,7 @@ class SensorApertura:
 # Para ejecutar el sensor de forma independiente
 if __name__ == "__main__":
     # Inicializar sensor
-    sensor = SensorApertura("APE001", "Puerta Emergencia Almacén")
+    sensor = SensorApertura("APR001", "Puerta Emergencia Almacén")
     
     try:
         while True:

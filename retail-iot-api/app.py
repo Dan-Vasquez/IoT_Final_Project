@@ -9,8 +9,18 @@ from chalicelib.db import (
 )
 import os
 import json
+from datetime import datetime
+
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
 
 app = Chalice(app_name='retail-iot-api')
+app.api.binary_types.append('application/json')
+app.debug = True
+app.json_encoder = DateTimeEncoder
 
 @app.route('/sensors', methods=['GET'])
 def list_sensors():
@@ -39,6 +49,9 @@ def add_sensor():
         )
         return {'message': 'Sensor creado exitosamente', 'sensor': sensor}
     except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Error detallado: {error_details}")
         raise BadRequestError(f"Error al crear sensor: {str(e)}")
 
 @app.route('/sensors/{sensor_id}/events', methods=['GET'])

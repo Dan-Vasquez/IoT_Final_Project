@@ -255,16 +255,6 @@ curl -X POST https://[API_URL]/sensors -H "Content-Type: application/json" -d '{
 curl https://[API_URL]/sensors/MOV001/events
 ```
 
-### 6. Detener los Sensores y Actuadores
-
-Para detener todos los sensores y actuadores:
-
-```powershell
-cd '.\Sensors_y_Actuadores\'
-Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
-.\stop_all_sensors.ps1
-```
-
 ## Comunicación MQTT
 
 ### Estructura de Tópicos MQTT

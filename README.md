@@ -298,10 +298,10 @@ Todos los dispositivos publican mensajes JSON con la siguiente estructura base:
 ```json
 {
   "sensor": "tipo_dispositivo_id",
-  "value": valor_numerico,
+  "value": "valor_numerico",
   "unit": "unidad_medida",
   "timestamp": "2025-05-29T14:30:00Z",
-  ...campos_adicionales_especificos
+  "...campos_adicionales_especificos"
 }
 ```
 

@@ -448,6 +448,12 @@ La API se despliega en AWS Lambda y API Gateway mediante el framework Chalice. E
         "DB_USER": "dok",
         "DB_PASSWORD": "dok",
         "DB_PORT": "5432"
+      },
+        "api_gateway_stage": "dev",
+        "subnet_ids": ["subnet-0b2a045763963ba39"],
+        "security_group_ids": ["sg-028cd2d6e686d6136"],
+        "manage_iam_role": false,
+        "iam_role_arn": "arn:aws:iam::135474195498:role/LabRole"
       }
     }
   }

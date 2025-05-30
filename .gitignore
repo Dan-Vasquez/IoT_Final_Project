@@ -1,0 +1,29 @@
+# Python
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+*.env
+
+# AWS Chalice
+.chalice/deployments/
+.chalice/venv/
+.chalice/__pycache__/
+
+# Logs
+*.log
+
+# IDE/Editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Certificados y claves sensibles
+gatewayPUJC/*.pem
+gatewayPUJC/*.crt
+
+# AWS IoT Device SDK
+gatewayPUJC/aws-iot-device-sdk-python-v2/

@@ -4,7 +4,7 @@
   "stages": {
     "dev": {
       "environment_variables": {
-        "DB_HOST": "ec2-34-227-160-239.compute-1.amazonaws.com",
+        "DB_HOST": "ec2-34-201-128-170.compute-1.amazonaws.com",
         "DB_NAME": "iot_final_project",
         "DB_USER": "dok",
         "DB_PASSWORD": "dok",

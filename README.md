@@ -20,6 +20,7 @@ El sistema permite el monitoreo en tiempo real del estado de los sensores y actu
 ## Requisitos
 
 ### Software y dependencias
+
 - Python 3.6 o superior
 - PostgreSQL (ejecutado en instancia EC2)
 - AWS CLI configurado con permisos adecuados
@@ -31,6 +32,7 @@ El sistema permite el monitoreo en tiempo real del estado de los sensores y actu
   - `python-dotenv`
 
 ### Recursos AWS
+
 - Cuenta AWS con permisos adecuados
 - AWS IoT Core configurado con políticas y certificados
 - Instancia EC2 para PostgreSQL
@@ -38,6 +40,7 @@ El sistema permite el monitoreo en tiempo real del estado de los sensores y actu
 - API Gateway para la API REST
 
 ### Certificados y Claves
+
 - Certificados AWS IoT Core (incluidos en carpeta `gatewayPUJC`)
   - Certificado de cliente (`.cert.pem`)
   - Clave privada (`.private.key`)
@@ -46,17 +49,21 @@ El sistema permite el monitoreo en tiempo real del estado de los sensores y actu
 ## Configuración Inicial
 
 ### 1. Configurar PowerShell para la ejecución de scripts
+
 Cada vez que se quiera ejecutar scripts PowerShell (.ps1), se debe ejecutar el siguiente comando:
+
 ```powershell
 Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
 ```
 
 ### 2. Instalar dependencias Python
+
 ```bash
 pip install -r retail-iot-api/requirements.txt
 ```
 
 ### 3. Configurar variables de entorno
+
 Para la conexión a la base de datos, se utilizan variables de entorno que pueden configurarse en `.chalice/config.json` o en un archivo `.env` en la raíz del proyecto.
 
 ## Arquitectura del Sistema
@@ -69,12 +76,25 @@ El proyecto sigue una arquitectura de microservicios que integra dispositivos Io
 4. **API REST (AWS Chalice)** - Proporciona endpoints para gestionar los dispositivos y consultar eventos
 5. **Sistema de almacenamiento de eventos** - Integrado en el script de suscripción MQTT
 
+### Modelo Estrella
+
+El sistema utiliza un modelo estrella para organizar los datos en la base de datos PostgreSQL. A continuación se muestra una representación gráfica del modelo:
+
+![Modelo Estrella](assets/diagrama_estrella.png)
+
+### AWS IoT Core - Tópicos y Reglas
+
+La comunicación entre dispositivos IoT y AWS IoT Core se realiza mediante tópicos MQTT y reglas configuradas en AWS IoT Core. La siguiente imagen muestra la estructura de los tópicos y las reglas:
+
+![AWS IoT Core - Tópicos y Reglas](assets/IOT1.png)
+![AWS IoT Core - Tópicos y Reglas](assets/IOT2.png)
+
 ## Estructura del Proyecto
 
 ```
 IoT_Final_Project-Becerra/
 ├── gatewayPUJC/                # Gateway y configuración AWS IoT
-│   ├── Gateway/             
+│   ├── Gateway/
 │   │   ├── pub.py           # Script para publicar mensajes MQTT
 │   │   └── sub.py           # Script para suscribirse a tópicos y almacenar eventos
 │   ├── root-CA.crt           # Certificado CA raíz de AWS IoT
@@ -85,13 +105,11 @@ IoT_Final_Project-Becerra/
 │   ├── sensor_apertura.py    # Simula un sensor de apertura de puertas/ventanas
 │   ├── etiqueta_rfid.py      # Simula etiquetas RFID para productos
 │   ├── actuador_alarma.py    # Simula un actuador de alarma
-│   ├── actuador_puerta.py    # Simula un actuador de puerta automática
-│   ├── start_all_sensors.ps1 # Script para iniciar todos los sensores
-│   └── stop_all_sensors.ps1  # Script para detener todos los sensores
+│   └──  actuador_puerta.py    # Simula un actuador de puerta automática
 ├── retail-iot-api/           # API REST con AWS Chalice
 │   ├── app.py                # Aplicación principal de Chalice con endpoints
 │   ├── chalicelib/           # Biblioteca de funciones auxiliares
-│   │   ├── __init__.py       
+│   │   ├── __init__.py
 │   │   ├── db.py             # Funciones de acceso a la base de datos
 │   │   └── utils.py          # Utilidades generales y procesamiento de datos
 │   ├── .chalice/            # Configuración de Chalice
@@ -134,18 +152,10 @@ Esto desplegará la API en AWS Lambda y API Gateway, mostrando la URL de acceso.
 
 ### 3. Iniciar los Sensores y Actuadores
 
-Para iniciar todos los sensores y actuadores simulados:
+Para iniciar los sensores individuales ejecutando directamente los archivos Python:
 
 ```powershell
-cd '.\Sensors_y_Actuadores\'
-Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
-.\start_all_sensors.ps1
-```
-
-También puedes iniciar sensores individuales ejecutando directamente los archivos Python:
-
-```powershell
-python sensor_movimiento.py
+python .\sensor_movimiento.py
 ```
 
 ### 4. Monitorear los Mensajes MQTT y Almacenar Eventos
@@ -158,6 +168,78 @@ Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
 .\start_sub.ps1
 ```
 
+## Acceder a PostgreSQL
+
+Para interactuar con la base de datos PostgreSQL desde la instancia EC2, utiliza los siguientes comandos:
+
+```bash
+sudo -u postgres psql
+```
+
+### Comandos útiles en PostgreSQL
+
+- **Listar bases de datos**:
+
+  ```sql
+  \l
+  ```
+
+- **Conectar a la base de datos del proyecto**:
+
+  ```sql
+  \c iot_final_project
+  ```
+
+- **Listar tablas**:
+
+  ```sql
+  \dt
+  ```
+
+- **Ver detalles de una tabla específica**:
+  ```sql
+  \d <nombre tabla>
+  ```
+
+## Verificar el estado del servicio con Postman
+
+Para comprobar el estado del servicio API REST, utiliza el siguiente endpoint:
+
+```bash
+https://f0a2m1sl1l.execute-api.us-east-1.amazonaws.com/dev/health
+```
+
+El servicio debe devolver el estado `healthy`.
+
+## Requerimientos para la máquina de suscripción (Windows)
+
+Asegúrate de que la máquina que ejecutará el script de suscripción cumpla con los siguientes requisitos:
+
+1. **Software necesario**:
+
+   - Git
+   - Python 3.13.2
+
+2. **Instalar dependencias**:
+
+   ```bash
+   pip install awsiotsdk
+   pip install AWSIoTPythonSDK
+   pip install psycopg2-binary
+   pip install python-dotenv
+   ```
+
+3. **Configurar PowerShell para ejecutar scripts**:
+
+   ```powershell
+   Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
+   ```
+
+4. **Ejecutar el script de suscripción**:
+   ```powershell
+   .\start_sub.ps1
+   ```
+
 ### 5. Interactuar con la API REST
 
 Utiliza herramientas como Postman o curl para interactuar con la API REST:
@@ -167,7 +249,7 @@ Utiliza herramientas como Postman o curl para interactuar con la API REST:
 curl https://[API_URL]/sensors
 
 # Registrar un nuevo sensor
-curl -X POST https://[API_URL]/sensors -H "Content-Type: application/json" -d '{"sensor_id": "MOV001", "name": "Sensor de Movimiento Almacén", "type": "movimiento", "location": "Almacén Principal"}'  
+curl -X POST https://[API_URL]/sensors -H "Content-Type: application/json" -d '{"sensor_id": "MOV001", "name": "Sensor de Movimiento Almacén", "type": "movimiento", "location": "Almacén Principal"}'
 
 # Consultar eventos de un sensor
 curl https://[API_URL]/sensors/MOV001/events
@@ -190,24 +272,29 @@ Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
 El proyecto utiliza una estructura jerárquica de tópicos MQTT para organizar la comunicación entre dispositivos:
 
 **Para sensores:**
+
 ```
 data/retail/sensors/{tipo_sensor}/{id_sensor}
 ```
 
 Donde:
+
 - `{tipo_sensor}`: Puede ser `movimiento`, `apertura`, o `rfid`
 - `{id_sensor}`: Identificador único del sensor (ej. `MOV001`, `APE001`, `RFID001`)
 
 **Para actuadores:**
+
 ```
 data/retail/actuadores/{tipo_actuador}/{id_actuador}
 ```
 
 Donde:
+
 - `{tipo_actuador}`: Puede ser `alarma` o `puerta`
 - `{id_actuador}`: Identificador único del actuador (ej. `ALM001`, `PTA001`)
 
 **Ejemplos de tópicos:**
+
 - `data/retail/sensors/movimiento/MOV001`
 - `data/retail/sensors/apertura/APE001`
 - `data/retail/sensors/rfid/RFID001`
@@ -229,6 +316,7 @@ Todos los dispositivos publican mensajes JSON con la siguiente estructura base:
 ```
 
 **Campos comunes:**
+
 - `sensor`: Nombre del sensor/actuador en formato `tipo_ID` (ej. `movimiento_MOV001`)
 - `value`: Valor numérico del estado (generalmente 0=inactivo, 1=activo)
 - `unit`: Unidad de medida (generalmente "estado" para sensores binarios)
@@ -237,6 +325,7 @@ Todos los dispositivos publican mensajes JSON con la siguiente estructura base:
 **Campos adicionales específicos:**
 
 - Sensor de movimiento:
+
   ```json
   {
     "sensor": "movimiento_MOV001",
@@ -248,6 +337,7 @@ Todos los dispositivos publican mensajes JSON con la siguiente estructura base:
   ```
 
 - Etiqueta RFID:
+
   ```json
   {
     "sensor": "rfid_RFID001",
@@ -279,37 +369,37 @@ El sistema utiliza una base de datos PostgreSQL alojada en una instancia EC2 de 
 
 #### Tabla `sensors`
 
-| Columna      | Tipo          | Descripción                             |
-|--------------|---------------|-----------------------------------------|
-| sensor_id    | VARCHAR(50)   | Identificador único del sensor (PK)     |
-| name         | VARCHAR(100)  | Nombre descriptivo del sensor           |
-| type         | VARCHAR(50)   | Tipo de sensor (movimiento, apertura, rfid) |
-| location     | VARCHAR(100)  | Ubicación del sensor                    |
-| created_at   | TIMESTAMP     | Fecha de creación del registro          |
-| status       | VARCHAR(20)   | Estado del sensor (activo/inactivo)     |
+| Columna    | Tipo         | Descripción                                 |
+| ---------- | ------------ | ------------------------------------------- |
+| sensor_id  | VARCHAR(50)  | Identificador único del sensor (PK)         |
+| name       | VARCHAR(100) | Nombre descriptivo del sensor               |
+| type       | VARCHAR(50)  | Tipo de sensor (movimiento, apertura, rfid) |
+| location   | VARCHAR(100) | Ubicación del sensor                        |
+| created_at | TIMESTAMP    | Fecha de creación del registro              |
+| status     | VARCHAR(20)  | Estado del sensor (activo/inactivo)         |
 
 #### Tabla `actuators`
 
-| Columna      | Tipo          | Descripción                             |
-|--------------|---------------|-----------------------------------------|
-| actuator_id  | VARCHAR(50)   | Identificador único del actuador (PK)   |
-| name         | VARCHAR(100)  | Nombre descriptivo del actuador         |
-| type         | VARCHAR(50)   | Tipo de actuador (alarma, puerta)       |
-| location     | VARCHAR(100)  | Ubicación del actuador                  |
-| created_at   | TIMESTAMP     | Fecha de creación del registro          |
-| status       | VARCHAR(20)   | Estado del actuador (activo/inactivo)   |
+| Columna     | Tipo         | Descripción                           |
+| ----------- | ------------ | ------------------------------------- |
+| actuator_id | VARCHAR(50)  | Identificador único del actuador (PK) |
+| name        | VARCHAR(100) | Nombre descriptivo del actuador       |
+| type        | VARCHAR(50)  | Tipo de actuador (alarma, puerta)     |
+| location    | VARCHAR(100) | Ubicación del actuador                |
+| created_at  | TIMESTAMP    | Fecha de creación del registro        |
+| status      | VARCHAR(20)  | Estado del actuador (activo/inactivo) |
 
 #### Tabla `events`
 
-| Columna      | Tipo          | Descripción                             |
-|--------------|---------------|-----------------------------------------|
-| event_id     | SERIAL        | Identificador único del evento (PK)     |
-| device_id    | VARCHAR(50)   | ID del sensor o actuador                |
-| device_type  | VARCHAR(10)   | Tipo de dispositivo (sensor/actuador)   |
-| value        | FLOAT         | Valor registrado                        |
-| unit         | VARCHAR(20)   | Unidad de medida                        |
-| timestamp    | TIMESTAMP     | Fecha y hora del evento                 |
-| metadata     | JSONB         | Datos adicionales en formato JSON       |
+| Columna     | Tipo        | Descripción                           |
+| ----------- | ----------- | ------------------------------------- |
+| event_id    | SERIAL      | Identificador único del evento (PK)   |
+| device_id   | VARCHAR(50) | ID del sensor o actuador              |
+| device_type | VARCHAR(10) | Tipo de dispositivo (sensor/actuador) |
+| value       | FLOAT       | Valor registrado                      |
+| unit        | VARCHAR(20) | Unidad de medida                      |
+| timestamp   | TIMESTAMP   | Fecha y hora del evento               |
+| metadata    | JSONB       | Datos adicionales en formato JSON     |
 
 ## API REST con AWS Chalice
 
@@ -317,14 +407,14 @@ El proyecto incluye una API REST desarrollada con AWS Chalice que proporciona ac
 
 ### Endpoints de la API
 
-| Método | Ruta                         | Funcionalidad                 | Descripción                                             |
-| ------ | ---------------------------- | ----------------------------- | ------------------------------------------------------ |
-| GET    | /sensors                     | Listar sensores registrados   | Devuelve todos los sensores registrados en el sistema  |
-| POST   | /sensors                     | Registrar un nuevo sensor     | Crea un nuevo sensor con los datos proporcionados      |
-| GET    | /sensors/{sensor_id}/events  | Ver eventos de un sensor      | Muestra el historial de eventos de un sensor específico |
-| GET    | /actuators                   | Listar actuadores registrados | Devuelve todos los actuadores registrados en el sistema|
-| POST   | /actuators                   | Registrar un nuevo actuador   | Crea un nuevo actuador con los datos proporcionados    |
-| GET    | /health                      | Verificar estado de la API    | Endpoint para verificar que la API está funcionando   |
+| Método | Ruta                        | Funcionalidad                 | Descripción                                             |
+| ------ | --------------------------- | ----------------------------- | ------------------------------------------------------- |
+| GET    | /sensors                    | Listar sensores registrados   | Devuelve todos los sensores registrados en el sistema   |
+| POST   | /sensors                    | Registrar un nuevo sensor     | Crea un nuevo sensor con los datos proporcionados       |
+| GET    | /sensors/{sensor_id}/events | Ver eventos de un sensor      | Muestra el historial de eventos de un sensor específico |
+| GET    | /actuators                  | Listar actuadores registrados | Devuelve todos los actuadores registrados en el sistema |
+| POST   | /actuators                  | Registrar un nuevo actuador   | Crea un nuevo actuador con los datos proporcionados     |
+| GET    | /health                     | Verificar estado de la API    | Endpoint para verificar que la API está funcionando     |
 
 ### Formato de solicitudes POST
 

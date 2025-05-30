@@ -18,7 +18,7 @@ load_dotenv()
 # Configuración de la conexión a PostgreSQL
 # Se utilizan valores predeterminados si no se encuentran las variables de entorno
 DB_CONFIG = {
-    'host': os.environ.get('DB_HOST', '34.227.160.239'),  # Servidor de base de datos
+    'host': os.environ.get('DB_HOST', '34.201.128.170'),  # Servidor de base de datos
     'dbname': os.environ.get('DB_NAME', 'iot_final_project'),  # Nombre de la base de datos
     'user': os.environ.get('DB_USER', 'dok'),  # Usuario de la base de datos
     'password': os.environ.get('DB_PASSWORD', 'dok'),  # Contraseña

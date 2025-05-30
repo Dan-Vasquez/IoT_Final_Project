@@ -494,17 +494,6 @@ Este error suele ocurrir cuando la API no puede serializar objetos datetime:
 2. **Comprueba la conectividad a AWS IoT Core** - Usa herramientas como el Monitor de pruebas MQTT de AWS IoT
 3. **Revisa los mensajes de error en la consola** - Al ejecutar los sensores o el script de suscripción
 
-## Conclusiones
-
-Este proyecto demuestra una implementación completa de un sistema IoT para retail utilizando AWS IoT Core, combinando:
-
-1. **Simulación de dispositivos IoT** - Sensores y actuadores realistas
-2. **Comunicación MQTT** - Protocolo estándar para IoT
-3. **Almacenamiento de datos** - Persistencia en PostgreSQL
-4. **API REST** - Acceso a datos mediante servicios serverless
-
-El sistema es extensible y puede adaptarse para incluir nuevos tipos de sensores, actuadores y funcionalidades adicionales según sea necesario para el entorno retail.
-
 ## Licencia
 
 Este proyecto está bajo la **Licencia MIT** - ver el archivo [LICENSE](LICENSE) para más detalles.
